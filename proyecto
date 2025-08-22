@@ -1,0 +1,70 @@
+# X: todas las columnas numéricas menos la de satisfacción
+X = numeric_columns.drop('Employee_Satisfaction_Score', axis=1)
+
+# y: la columna objetivo
+y = numeric_columns['Employee_Satisfaction_Score']
+y = y.apply(lambda x: round(x) - 1)  # Categorizamos en 5 clases: 0 a 4
+
+# Estandarización
+scaler = StandardScaler()
+X_standar = scaler.fit_transform(X)
+
+# División en entrenamiento y prueba
+X_train, X_test, y_train, y_test = train_test_split(X_standar, y, test_size=0.33, random_state=42)
+
+# One-hot encoding para clasificación multiclase
+y_onehot_train = tf.keras.utils.to_categorical(y_train, 5)
+y_onehot_test = tf.keras.utils.to_categorical(y_test, 5)
+
+def build_model_simple():
+    model = models.Sequential([
+        layers.Input(shape=(X_train.shape[1],)),
+        layers.Dense(32, activation='relu'),
+        layers.Dense(5, activation='softmax')
+    ])
+    return model
+
+# Arquitectura 2: Modelo intermedio
+def build_model_intermediate():
+    model = models.Sequential([
+        layers.Input(shape=(X_train.shape[1],)),
+        layers.Dense(64, activation='relu'),
+        layers.Dense(32, activation='relu'),
+        layers.Dense(5, activation='softmax')
+    ])
+    return model
+
+# Arquitectura 3: Modelo más profundo con dropout
+def build_model_deep():
+    model = models.Sequential([
+        layers.Input(shape=(X_train.shape[1],)),
+        layers.Dense(128, activation='relu'),
+        layers.Dropout(0.3),
+        layers.Dense(64, activation='relu'),
+        layers.Dropout(0.3),
+        layers.Dense(32, activation='relu'),
+        layers.Dense(5, activation='softmax')
+    ])
+    return model
+
+# Parámetros comunes
+EPOCHS = 50
+BATCH_SIZE = 32
+
+# Entrenamiento del modelo simple
+model_simple = build_model_simple()
+model_simple.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+history_simple = model_simple.fit(X_train, y_onehot_train, epochs=EPOCHS, batch_size=BATCH_SIZE,
+                                  validation_split=0.2, verbose=0)
+
+# Entrenamiento del modelo intermedio
+model_intermediate = build_model_intermediate()
+model_intermediate.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+history_intermediate = model_intermediate.fit(X_train, y_onehot_train, epochs=EPOCHS, batch_size=BATCH_SIZE,
+                                              validation_split=0.2, verbose=0)
+
+# Entrenamiento del modelo profundo
+model_deep = build_model_deep()
+model_deep.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+history_deep = model_deep.fit(X_train, y_onehot_train, epochs=EPOCHS, batch_size=BATCH_SIZE,
+                              validation_split=0.2, verbose=0)
